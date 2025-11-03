@@ -27,7 +27,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 local MainTab = Window:CreateTab("⚙️ ระบบหลัก", 4483362458)
-local StatusLabel = MainTab:CreateLabel("⛔ ระบบปิดอยู่")
+local StatusLabel = MainTab:CreateLabel(" ระบบปิดอยู่")
 
 local function randOffset(r)
 	return (math.random() * 2 - 1) * r
