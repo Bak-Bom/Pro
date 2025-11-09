@@ -1,194 +1,302 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local CheckpointEvent = ReplicatedStorage:WaitForChild("Events"):WaitForChild("Checkpoint")
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+end)
+
+if not success or not Rayfield then
+    warn("⚠️ โหลด Rayfield ไม่ได้ ตรวจสอบลิงก์อีกครั้ง")
+    Rayfield = {
+        CreateWindow = function() return { CreateTab=function() return { CreateToggle=function() end, CreateButton=function() end, CreateSlider=function() end, CreateInput=function() end } end } end,
+        Notify = function() end
+    }
+end
+
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-
-local CHECKPOINT_COUNT = 100
-local CHECK_DELAY = 0.1
-local ROUND_DELAY = 1.5
-local MAX_RETRY = 3
-local SKIP_THRESHOLD = 4
-local JITTER_MAX = 0.05
-
-local autoRun = false
-local bypassEnabled = false
-local activeThread = nil
-local failureCounts = {}
-local skipList = {}
-
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Camera = workspace.CurrentCamera
 
 local Window = Rayfield:CreateWindow({
-	Name = "🏁 Checkpoint Control Panel",
-	LoadingTitle = "Rayfield UI",
-	LoadingSubtitle = "by Digital Subsidy",
-	ConfigurationSaving = { Enabled = false },
-	KeySystem = false,
+    Name = "🌌 BomDev X Pro | Ultimate Hub",
+    LoadingTitle = "⚙️ Loading Advanced System...",
+    LoadingSubtitle = "Design by BomDev Studios",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "BomDevPro"
+    },
+    KeySystem = false
 })
-
-local MainTab = Window:CreateTab("⚙️ ระบบหลัก", 4483362458)
-local StatusLabel = MainTab:CreateLabel("⛔ ระบบปิดอยู่")
-
-local function randOffset(r)
-	return (math.random() * 2 - 1) * r
-end
-
-local function safeFire(args)
-	local id = tostring(args[1])
-	if skipList[id] then return false, "skipped_by_user" end
-	failureCounts[id] = failureCounts[id] or 0
-	if failureCounts[id] >= SKIP_THRESHOLD then return false, "skipped_threshold" end
-
-	local function attemptOnce(payload)
-		local ok, err = pcall(function()
-			CheckpointEvent:FireServer(unpack(payload))
-		end)
-		return ok, err
-	end
-
-	if bypassEnabled then
-		local ok, err = attemptOnce(args)
-		if ok then
-			failureCounts[id] = 0
-			return true
-		else
-		
-			local altAttempts = 2
-			local baseDelay = CHECK_DELAY * 0.8
-			for i = 1, altAttempts do
-				local alt = {}
-				for k,v in ipairs(args) do alt[k] = v end		
-				if type(alt[2]) == "number" then
-					alt[2] = alt[2] + randOffset(0.08 * i) 
-				end
-				
-				task.wait(baseDelay + math.random() * (JITTER_MAX*2))
-				local ok2, err2 = attemptOnce(alt)
-				if ok2 then
-					failureCounts[id] = 0
-					return true
-				end
-			end
-
-			local retries = 0
-			local backoff = 0.1
-			repeat
-				task.wait(backoff + math.random() * JITTER_MAX)
-				ok, err = attemptOnce(args)
-				if ok then
-					failureCounts[id] = 0
-					return true
-				end
-				retries = retries + 1
-				backoff = backoff * 2 -- exponential backoff
-			until ok or retries >= MAX_RETRY
-
-			failureCounts[id] = failureCounts[id] + 1
-			return false, err
-		end
-	else
-		
-		local ok, err = attemptOnce(args)
-		if ok then
-			failureCounts[id] = 0
-			return true
-		end
-		local retries = 0
-		repeat
-			task.wait(CHECK_DELAY + math.random() * (JITTER_MAX * 0.5))
-			ok, err = attemptOnce(args)
-			retries = retries + 1
-		until ok or retries >= MAX_RETRY
-
-		if ok then
-			failureCounts[id] = 0
-			return true
-		else
-			failureCounts[id] = failureCounts[id] + 1
-			return false, err
-		end
-	end
-end
-
-local function getAllCheckpoints()
-	local list = {}
-	for i = 1, CHECKPOINT_COUNT do
-		
-		table.insert(list, {i, 85.06828437093645})
-	end
-	return list
-end
-
-local function startAuto(StatusLabel)
-	if activeThread then task.cancel(activeThread) end
-	activeThread = task.spawn(function()
-		while autoRun and LocalPlayer.Parent do
-			local checkpoints = getAllCheckpoints()
-			for i, args in ipairs(checkpoints) do
-				if not autoRun then break end
-				local ok, reason
-				local retries = 0
-				repeat
-					ok, reason = safeFire(args)
-					retries = retries + 1
-					
-					if bypassEnabled then
-						task.wait(CHECK_DELAY + 0.05 + math.random() * JITTER_MAX)
-					else
-						task.wait(CHECK_DELAY + math.random() * JITTER_MAX)
-					end
-				until ok or retries >= (bypassEnabled and (MAX_RETRY + 1) or MAX_RETRY)
-				StatusLabel:Set(string.format("กำลังเช็คจุด: %d/%d", i, #checkpoints))
-				task.wait(0.05)
-			end
-			StatusLabel:Set("✅ All checkpoints done. Waiting...")
-			task.wait(ROUND_DELAY)
-		end
-		StatusLabel:Set("⛔ ระบบปิดอยู่")
-	end)
-end
-
-MainTab:CreateToggle({
-	Name = "🟢 Auto Checkpoint",
-	CurrentValue = false,
-	Flag = "AutoCheckpoint",
-	Callback = function(Value)
-		autoRun = Value
-		if Value then
-			startAuto(StatusLabel)
-		else
-			if activeThread then task.cancel(activeThread) activeThread = nil end
-			StatusLabel:Set("⛔ ระบบปิดอยู่")
-		end
-	end,
-})
-
-MainTab:CreateToggle({
-	Name = "🛡️ Bypass (โหมดพิเศษ)",
-	CurrentValue = false,
-	Flag = "BypassToggle",
-	Callback = function(Value)
-		bypassEnabled = Value
-		if Value then
-			Rayfield:Notify({
-				Title = "Bypass ON",
-				Content = "โหมด Bypass เปิดแล้ว — ระบบจะยิงแบบ multi-shot พร้อม jitter",
-				Duration = 3
-			})
-		else
-			Rayfield:Notify({
-				Title = "Bypass OFF",
-				Content = "โหมด Bypass ปิดแล้ว — ระบบจะยิงแบบปกติ",
-				Duration = 3
-			})
-		end
-	end,
-})
-
-MainTab:CreateLabel("หมายเหตุ: Bypass ทำให้ระบบกันโปรแมพตรวจจับสิ่งผิดปกติไม่ได้")
 
 Rayfield:Notify({
-	Title = "ระบบพร้อม!",
-	Content = "UI โหลดเสร็จแล้ว คุณสามารถเปิด Auto หรือ Bypass ได้เลย",
-	Duration = 5
+    Title = "🌈 BomDev Pro UI Loaded",
+    Content = "ระบบทั้งหมดพร้อมใช้งานแล้ว 💫",
+    Duration = 4
+})
+
+local flyEnabled = false
+local flySpeed = 60
+local speedEnabled = false
+local speedValue = 60
+local jumpEnabled = false
+local jumpValue = 100
+local noclipEnabled = false
+local invisible = false
+local savedCharacter = nil
+
+local function toggleFly()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+    flyEnabled = not flyEnabled
+    local hrp = char.HumanoidRootPart
+    local hum = char:FindFirstChildOfClass("Humanoid")
+
+    if flyEnabled then
+        local bv = Instance.new("BodyVelocity")
+        bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        bv.Velocity = Vector3.zero
+        bv.Parent = hrp
+
+        local bg = Instance.new("BodyGyro")
+        bg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bg.P = 9e4
+        bg.CFrame = hrp.CFrame
+        bg.Parent = hrp
+
+        Rayfield:Notify({
+            Title = "✈️ Flight Mode Activated",
+            Content = "คุณสามารถบินได้แล้ว!",
+            Duration = 3
+        })
+
+        task.spawn(function()
+            while flyEnabled and task.wait() do
+                if not hrp or not hum then break end
+                bg.CFrame = Camera.CFrame
+                local moveDir = hum.MoveDirection
+                if moveDir.Magnitude > 0 then
+                    local cameraDir = Camera.CFrame.LookVector
+                    local flatMove = Vector3.new(cameraDir.X, cameraDir.Y, cameraDir.Z)
+                    bv.Velocity = flatMove.Unit * flySpeed
+                else
+                    bv.Velocity = Vector3.zero
+                end
+            end
+        end)
+    else
+        for _,v in ipairs(hrp:GetChildren()) do
+            if v:IsA("BodyVelocity") or v:IsA("BodyGyro") then
+                v:Destroy()
+            end
+        end
+        Rayfield:Notify({
+            Title = "🪂 Flight Disabled",
+            Content = "โหมดบินถูกปิดแล้ว",
+            Duration = 3
+        })
+    end
+end
+
+local function toggleSpeed()
+    speedEnabled = not speedEnabled
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.WalkSpeed = speedEnabled and speedValue or 16
+        Rayfield:Notify({
+            Title = "⚡ Speed Mode",
+            Content = speedEnabled and "เปิดความเร็วสูงแล้ว" or "ปิดความเร็วแล้ว",
+            Duration = 2
+        })
+    end
+end
+
+local function toggleJump()
+    jumpEnabled = not jumpEnabled
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.JumpPower = jumpEnabled and jumpValue or 50
+        Rayfield:Notify({
+            Title = "🦘 Jump Boost",
+            Content = jumpEnabled and "กระโดดสูงเปิดแล้ว" or "กระโดดสูงปิดแล้ว",
+            Duration = 2
+        })
+    end
+end
+
+RunService.Stepped:Connect(function()
+    if noclipEnabled and LocalPlayer.Character then
+        for _, v in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.CanCollide = false
+            end
+        end
+    end
+end)
+
+local function toggleInvis(state)
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then
+        Rayfield:Notify({
+            Title = "⚠️ ไม่พบตัวละคร",
+            Content = "ระบบล่องหนไม่สามารถทำงานได้ เพราะไม่พบ HumanoidRootPart",
+            Duration = 3
+        })
+        return
+    end
+
+    invisible = state
+
+    if invisible then
+        local success = pcall(function()
+            for _, v in pairs(char:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    
+                    v.Transparency = 1
+                    v.Material = Enum.Material.ForceField 
+                    v.CanCollide = false
+                elseif v:IsA("Decal") then
+                    v.Transparency = 1
+                end
+            end
+        end)
+
+        if success then
+            Rayfield:Notify({
+                Title = "🌀 Invisibility Activated",
+                Content = "คุณหายไปจากสายตาคนอื่นแล้ว 💨",
+                Duration = 3
+            })
+        else
+            Rayfield:Notify({
+                Title = "❌ ล่องหนล้มเหลว",
+                Content = "เกิดข้อผิดพลาดระหว่างทำงาน",
+                Duration = 3
+            })
+        end
+
+    else
+        
+        for _, v in pairs(char:GetDescendants()) do
+            if v:IsA("BasePart") then
+                v.Transparency = 0
+                v.Material = Enum.Material.Plastic 
+                v.CanCollide = true
+            elseif v:IsA("Decal") then
+                v.Transparency = 0
+            end
+        end
+
+        Rayfield:Notify({
+            Title = "🌀 Invisibility Disabled",
+            Content = "กลับมาเป็นปกติแล้ว ✅",
+            Duration = 3
+        })
+    end
+end
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    task.wait(1)
+    if speedEnabled then
+        local hum = char:WaitForChild("Humanoid")
+        hum.WalkSpeed = speedValue
+    end
+    if jumpEnabled then
+        local hum = char:WaitForChild("Humanoid")
+        hum.JumpPower = jumpValue
+    end
+end)
+
+local MovementTab = Window:CreateTab("🚀 Movement Control", 4483362458)
+
+MovementTab:CreateToggle({
+    Name = "✈️ เปิด/ปิดบิน (Fly Mode)",
+    CurrentValue = false,
+    Flag = "Fly",
+    Callback = toggleFly
+})
+
+MovementTab:CreateSlider({
+    Name = "🌪 ความเร็วบิน (Fly Speed)",
+    Range = {10, 300},
+    Increment = 10,
+    Suffix = "Speed",
+    CurrentValue = flySpeed,
+    Flag = "FlySpeed",
+    Callback = function(v)
+        flySpeed = v
+    end
+})
+
+MovementTab:CreateToggle({
+    Name = "⚡ วิ่งเร็ว (Super Speed)",
+    CurrentValue = false,
+    Flag = "Speed",
+    Callback = toggleSpeed
+})
+
+MovementTab:CreateSlider({
+    Name = "🏃‍♂️ ความเร็วเดิน (Walk Speed)",
+    Range = {16, 200},
+    Increment = 5,
+    Suffix = "Speed",
+    CurrentValue = speedValue,
+    Flag = "SpeedValue",
+    Callback = function(v)
+        speedValue = v
+        if speedEnabled and LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = v end
+        end
+    end
+})
+
+MovementTab:CreateToggle({
+    Name = "🦘 กระโดดสูง (High Jump)",
+    CurrentValue = false,
+    Flag = "Jump",
+    Callback = toggleJump
+})
+
+MovementTab:CreateSlider({
+    Name = "⬆️ ความสูงกระโดด (Jump Power)",
+    Range = {50, 500},
+    Increment = 10,
+    Suffix = "Jump",
+    CurrentValue = jumpValue,
+    Flag = "JumpPower",
+    Callback = function(v)
+        jumpValue = v
+        if jumpEnabled and LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum.JumpPower = v end
+        end
+    end
+})
+
+MovementTab:CreateToggle({
+    Name = "👻 เดินทะลุสิ่งของ (NoClip)",
+    CurrentValue = false,
+    Flag = "Noclip",
+    Callback = function(v)
+        noclipEnabled = v
+        Rayfield:Notify({
+            Title = "👻 NoClip Mode",
+            Content = v and "ทะลุทุกสิ่งเปิดแล้ว" or "ปิดโหมดทะลุ",
+            Duration = 2
+        })
+    end
+})
+
+MovementTab:CreateToggle({
+    Name = "🌀 ล่องหน (Invisible Mode)",
+    CurrentValue = false,
+    Flag = "Invisible",
+    Callback = function(v)
+        toggleInvis(v)
+    end
+})
+
+Rayfield:Notify({
+    Title = "💠 BomDev Pro Menu Ready!",
+    Content = "✨ ระบบทั้งหมดพร้อมใช้งานแล้ว พร้อม UI ระดับมืออาชีพ!",
+    Duration = 6
 })
