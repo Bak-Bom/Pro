@@ -302,45 +302,6 @@ local function refreshPlayerList()
     end
     return playerNames
 end
-local function toggleViewPlayer()
-    if viewing then
-        viewing = false
-        currentViewed = nil
-        Rayfield:Notify({
-            Title = "👁‍🗨 View Disabled",
-            Content = "ออกจากโหมดส่องผู้เล่นแล้ว",
-            Duration = 2
-        })
-        return
-    end
-
-    if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("Head") then
-        viewing = true
-        currentViewed = selectedPlayer
-
-        Rayfield:Notify({
-            Title = "👁‍🗨 View Mode",
-            Content = "กำลังส่อง " .. selectedPlayer.Name,
-            Duration = 3
-        })
-
-        task.spawn(function()
-            while viewing and currentViewed and currentViewed.Character and currentViewed.Character:FindFirstChild("Head") do
-                task.wait()
-                Camera.CameraSubject = currentViewed.Character:FindFirstChild("Humanoid")
-            end
-            if not viewing then
-                Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
-            end
-        end)
-    else
-        Rayfield:Notify({
-            Title = "⚠️ ไม่สามารถส่องได้",
-            Content = "กรุณาเลือกผู้เล่นก่อน หรือผู้เล่นนั้นไม่มีตัวอยู่ในเกม",
-            Duration = 3
-        })
-    end
-end
 
 local MovementTab = Window:CreateTab("🚀 Movement Control", 4483362458)
 
@@ -501,27 +462,25 @@ UtilsTab:CreateButton({
 local TeleportTab = Window:CreateTab("🧭 Teleport & Viewer", 4483362458)
 
 local playerDropdown = TeleportTab:CreateDropdown({
-    Name = "👥 รายชื่อผู้เล่นในเซิร์ฟ",
+    Name = "👥 เลือกผู้เล่นในเซิร์ฟ",
     Options = refreshPlayerList(),
     CurrentOption = nil,
     Flag = "PlayerList",
     Callback = function(option)
-        
         local playerName = typeof(option) == "table" and option[1] or option
         local plr = Players:FindFirstChild(playerName)
-
         if plr then
             selectedPlayer = plr
             Rayfield:Notify({
-                Title = "🎯 เลือกผู้เล่นแล้ว",
-                Content = "คุณเลือก " .. tostring(playerName),
+                Title = "✅ เลือกผู้เล่นแล้ว",
+                Content = "คุณเลือก: " .. playerName,
                 Duration = 2
             })
         else
             selectedPlayer = nil
             Rayfield:Notify({
                 Title = "⚠️ ไม่พบผู้เล่น",
-                Content = "ไม่สามารถเลือกผู้เล่นนี้ได้ อาจออกจากเกมแล้ว",
+                Content = "ผู้เล่นนี้อาจออกจากเกมแล้ว",
                 Duration = 2
             })
         end
@@ -533,8 +492,8 @@ TeleportTab:CreateButton({
     Callback = function()
         playerDropdown:Set(refreshPlayerList())
         Rayfield:Notify({
-            Title = "🔄 อัปเดตรายชื่อแล้ว",
-            Content = "รีเฟรชรายชื่อผู้เล่นในเซิร์ฟเวอร์แล้ว ✅",
+            Title = "🔁 รายชื่ออัปเดตแล้ว",
+            Content = "รีเฟรชผู้เล่นในเซิร์ฟเวอร์สำเร็จ ✅",
             Duration = 2
         })
     end
@@ -544,37 +503,74 @@ TeleportTab:CreateButton({
     Name = "⚡ วาร์ปไปหาผู้เล่นที่เลือก",
     Callback = function()
         if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
             local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-
             if char and char:FindFirstChild("HumanoidRootPart") then
-                char:MoveTo(targetPos + Vector3.new(0, 3, 0))
+                char:MoveTo(selectedPlayer.Character.HumanoidRootPart.Position + Vector3.new(0, 3, 0))
                 Rayfield:Notify({
                     Title = "⚡ วาร์ปสำเร็จ",
-                    Content = "คุณถูกวาร์ปไปหา " .. selectedPlayer.Name .. " แล้ว!",
-                    Duration = 2
-                })
-            else
-                Rayfield:Notify({
-                    Title = "⚠️ ตัวละครไม่สมบูรณ์",
-                    Content = "ไม่พบ HumanoidRootPart ของคุณ",
+                    Content = "คุณถูกวาร์ปไปหา " .. selectedPlayer.Name,
                     Duration = 2
                 })
             end
         else
             Rayfield:Notify({
-                Title = "❌ ไม่สามารถวาร์ปได้",
-                Content = "กรุณาเลือกผู้เล่นก่อน หรือผู้เล่นนั้นไม่มีตัวอยู่",
+                Title = "❌ วาร์ปล้มเหลว",
+                Content = "กรุณาเลือกผู้เล่นก่อน หรือผู้เล่นไม่มีตัวในเกม",
                 Duration = 2
             })
         end
     end
 })
 
-TeleportTab:CreateButton({
+TeleportTab:CreateToggle({
     Name = "👁‍🗨 ส่องผู้เล่นที่เลือก (View Player)",
-    Callback = function()
-        toggleViewPlayer()
+    CurrentValue = false,
+    Flag = "ViewPlayer",
+    Callback = function(state)
+        if state then
+            if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("Humanoid") then
+                viewing = true
+                currentViewed = selectedPlayer
+                Camera.CameraSubject = currentViewed.Character:FindFirstChild("Humanoid")
+
+                Rayfield:Notify({
+                    Title = "👁‍🗨 View Enabled",
+                    Content = "กำลังส่อง " .. currentViewed.Name,
+                    Duration = 3
+                })
+
+                task.spawn(function()
+                    while viewing do
+                        task.wait(0.5)
+                        if not currentViewed or not currentViewed.Character or not currentViewed.Character:FindFirstChild("Humanoid") then
+                            viewing = false
+                            Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+                            Rayfield:Notify({
+                                Title = "⚠️ ผู้เล่นหายไป",
+                                Content = "ออกจากโหมดส่องอัตโนมัติ",
+                                Duration = 2
+                            })
+                            break
+                        end
+                    end
+                end)
+            else
+                Rayfield:Notify({
+                    Title = "⚠️ ไม่สามารถส่องได้",
+                    Content = "กรุณาเลือกผู้เล่นก่อน หรือผู้เล่นไม่มีตัวอยู่ในเกม",
+                    Duration = 3
+                })
+            end
+        else
+            viewing = false
+            currentViewed = nil
+            Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+            Rayfield:Notify({
+                Title = "👁‍🗨 View Disabled",
+                Content = "ออกจากโหมดส่องผู้เล่นแล้ว",
+                Duration = 2
+            })
+        end
     end
 })
 
