@@ -239,20 +239,11 @@ local function toggleESP(state)
         end
     end
 end
+local function setGodMode(state)
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hum = char:FindFirstChildOfClass("Humanoid")
 
-local function toggleGodMode()
-    local char = LocalPlayer.Character
-    if not char then
-        Rayfield:Notify({
-            Title = "⚠️ God Mode",
-            Content = "ไม่พบตัวละครของคุณในตอนนี้",
-            Duration = 2
-        })
-        return
-    end
-
-    if not godModeEnabled then
-        local hum = char:FindFirstChildOfClass("Humanoid")
+    if state then
         if hum then
             hum.Name = "1"
             local newHum = hum:Clone()
@@ -265,10 +256,17 @@ local function toggleGodMode()
                 Duration = 3
             })
             godModeEnabled = true
+        else
+            Rayfield:Notify({
+                Title = "⚠️ God Mode",
+                Content = "ไม่พบ Humanoid ในตัวละคร",
+                Duration = 2
+            })
         end
     else
-        
-        LocalPlayer:LoadCharacter()
+        if LocalPlayer.Character then
+            LocalPlayer:LoadCharacter()
+        end
         Rayfield:Notify({
             Title = "💀 God Mode",
             Content = "ปิดโหมดอมตะแล้ว",
@@ -425,7 +423,7 @@ MovementTab:CreateToggle({
     CurrentValue = false,
     Flag = "GodModeToggle",
     Callback = function(value)
-        toggleGodMode()
+        setGodMode(value)
     end
 })
 
