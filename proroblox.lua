@@ -48,6 +48,7 @@ local aimbotRange = 200
 local selectedPlayer = nil
 local viewing = false
 local currentViewed = nil
+local godModeEnabled = false
 
 local function toggleFly()
     local char = LocalPlayer.Character
@@ -241,19 +242,39 @@ end
 
 local function toggleGodMode()
     local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.Name = "1"
-        local newHum = hum:Clone()
-        newHum.Parent = char
-        task.wait()
-        hum:Destroy()
+    if not char then
         Rayfield:Notify({
-            Title = "💎 God Mode",
-            Content = "เปิดโหมดอมตะแล้ว (อาจไม่ใช้ได้ทุกเกม)",
+            Title = "⚠️ God Mode",
+            Content = "ไม่พบตัวละครของคุณในตอนนี้",
+            Duration = 2
+        })
+        return
+    end
+
+    if not godModeEnabled then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.Name = "1"
+            local newHum = hum:Clone()
+            newHum.Parent = char
+            task.wait()
+            hum:Destroy()
+            Rayfield:Notify({
+                Title = "💎 God Mode",
+                Content = "เปิดโหมดอมตะแล้ว (อาจไม่ใช้ได้ทุกเกม)",
+                Duration = 3
+            })
+            godModeEnabled = true
+        end
+    else
+        
+        LocalPlayer:LoadCharacter()
+        Rayfield:Notify({
+            Title = "💀 God Mode",
+            Content = "ปิดโหมดอมตะแล้ว",
             Duration = 3
         })
+        godModeEnabled = false
     end
 end
 
@@ -399,9 +420,13 @@ MovementTab:CreateToggle({
     Flag = "ESP",
     Callback = toggleESP
 })
-MovementTab:CreateButton({
+MovementTab:CreateToggle({
     Name = "💎 โหมดอมตะ (God Mode)",
-    Callback = toggleGodMode
+    CurrentValue = false,
+    Flag = "GodModeToggle",
+    Callback = function(value)
+        toggleGodMode()
+    end
 })
 
 local CombatTab = Window:CreateTab("⚔️ Combat System", 4483362458)
