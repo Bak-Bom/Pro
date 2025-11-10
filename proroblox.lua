@@ -511,22 +511,24 @@ TeleportTab:CreateButton({
 })
 
 TeleportTab:CreateToggle({
-    Name = "🎥 เปิด/ปิดโหมดส่องหัว (Head Viewer)",
+    Name = "🎥 เปิด/ปิดโหมดส่องผู้เล่น (Player Viewer)",
     CurrentValue = false,
-    Flag = "HeadView",
+    Flag = "PlayerView",
     Callback = function(state)
         headViewEnabled = state
         Rayfield:Notify({
-            Title = "🎥 Head Viewer",
-            Content = state and "เปิดโหมดส่องหัวแล้ว" or "ปิดโหมดส่องหัวแล้ว",
+            Title = "🎥 Player Viewer",
+            Content = state and "เปิดโหมดส่องผู้เล่นแล้ว" or "ปิดโหมดส่องผู้เล่นแล้ว",
             Duration = 2
         })
     end
 })
 
 RunService.RenderStepped:Connect(function()
-    if headViewEnabled and selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("Head") then
-        Camera.CFrame = CFrame.new(Camera.CFrame.Position, selectedPlayer.Character.Head.Position)
+    if headViewEnabled and selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
+        local camPos = Camera.CFrame.Position
+        Camera.CFrame = CFrame.new(camPos, targetPos)
     end
 end)
 Rayfield:Notify({
