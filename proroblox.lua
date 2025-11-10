@@ -546,20 +546,23 @@ TeleportTab:CreateToggle({
 
 RunService.RenderStepped:Connect(function()
     if headViewEnabled then
-        if selectedPlayer and selectedPlayer.Parent == Players then
-            local char = selectedPlayer.Character or selectedPlayer.CharacterAdded:Wait()
-            local head = char:FindFirstChild("Head")
+        
+        if selectedPlayer and Players:FindFirstChild(selectedPlayer.Name) then
+            local char = selectedPlayer.Character
+            if not char then return end 
 
+            local head = char:FindFirstChild("Head") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart")
             if head then
+                
                 Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
             else
                 
                 task.spawn(function()
-                    local foundHead = char:WaitForChild("Head", 5)
-                    if not foundHead then
+                    local foundPart = char:WaitForChild("Head", 5)
+                    if not foundPart then
                         Rayfield:Notify({
-                            Title = "⚠️ ไม่พบหัวผู้เล่น",
-                            Content = "กำลังรอให้ผู้เล่นโหลดตัวอีกครั้ง...",
+                            Title = "⚠️ รอโหลดผู้เล่น...",
+                            Content = "ผู้เล่น " .. selectedPlayer.Name .. " ยังไม่โหลดเต็ม กำลังรอ...",
                             Duration = 2
                         })
                     end
@@ -570,14 +573,13 @@ RunService.RenderStepped:Connect(function()
             headViewEnabled = false
             selectedPlayer = nil
             Rayfield:Notify({
-                Title = "🚫 ผู้เล่นออกจากเซิร์ฟเวอร์",
-                Content = "ปิดโหมดส่องผู้เล่นอัตโนมัติ",
-                Duration = 2
+                Title = "🚫 ผู้เล่นออกจากเกม",
+                Content = "ระบบหยุดส่องอัตโนมัติ",
+                Duration = 3
             })
         end
     end
 end)
-
 Players.PlayerAdded:Connect(function()
     playerDropdown:Set(refreshPlayerList())
 end)
