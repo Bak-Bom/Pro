@@ -49,6 +49,8 @@ local selectedPlayer = nil
 local viewing = false
 local currentViewed = nil
 local godModeEnabled = false
+local originalMaterials = {}
+local fpsBoostEnabled = false
 
 local function toggleFly()
     local char = LocalPlayer.Character
@@ -324,6 +326,28 @@ local function setGodMode(state)
         end
     end
 end
+
+local function toggleAntiAFK(state)
+    if state then
+        Rayfield:Notify({
+            Title = "🛡 Anti-AFK",
+            Content = "เปิดระบบป้องกันหลุดแล้ว!",
+            Duration = 3
+        })
+        game:GetService("Players").LocalPlayer.Idled:Connect(function()
+            game:GetService("VirtualUser"):Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            game:GetService("VirtualUser"):Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
+        end)
+    else
+        Rayfield:Notify({
+            Title = "🛡 Anti-AFK",
+            Content = "ปิดระบบป้องกันหลุดแล้ว!",
+            Duration = 3
+        })
+    end
+end
+
 
 
 local function refreshPlayerList()
@@ -611,6 +635,116 @@ TeleportTab:CreateToggle({
     end
 })
 
+local ExtraTab = Window:CreateTab("⚙️ Extra Features", 4483362458)
+
+ExtraTab:CreateToggle({
+    Name = "🛡 ป้องกันหลุดออก (Anti-AFK)",
+    CurrentValue = false,
+    Flag = "AntiAFK",
+    Callback = toggleAntiAFK
+})
+
+ExtraTab:CreateToggle({
+    Name = "🔁 รีเข้าอัตโนมัติ (Auto Rejoin)",
+    CurrentValue = false,
+    Flag = "AutoRejoin",
+    Callback = function(state)
+        if state then
+            Rayfield:Notify({
+                Title = "🔁 Auto Rejoin",
+                Content = "จะกลับเข้าทันทีถ้าหลุดจากเซิร์ฟ!",
+                Duration = 3
+            })
+            game:GetService("CoreGui").RobloxPromptGui.promptOverlay.ChildAdded:Connect(function(obj)
+                if obj.Name == "ErrorPrompt" then
+                    task.wait(2)
+                    game:GetService("TeleportService"):Teleport(game.PlaceId)
+                end
+            end)
+        else
+            Rayfield:Notify({
+                Title = "🔁 Auto Rejoin",
+                Content = "ปิดระบบรีเข้าอัตโนมัติแล้ว",
+                Duration = 3
+            })
+        end
+    end
+})
+
+ExtraTab:CreateToggle({
+    Name = "🌈 ร่างสายรุ้ง (Rainbow Mode)",
+    CurrentValue = false,
+    Flag = "RainbowMode",
+    Callback = function(state)
+        if state then
+            Rayfield:Notify({
+                Title = "🌈 Rainbow Mode",
+                Content = "เปิดเอฟเฟกต์สีสายรุ้งแล้ว!",
+                Duration = 3
+            })
+            task.spawn(function()
+                while state and task.wait(0.1) do
+                    for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+                        end
+                    end
+                end
+            end)
+        else
+            Rayfield:Notify({
+                Title = "🌈 Rainbow Mode",
+                Content = "ปิดโหมดสายรุ้งแล้ว!",
+                Duration = 3
+            })
+        end
+    end
+})
+
+UtilsTab:CreateToggle({
+    Name = "🚀 โหมด FPS Boost",
+    CurrentValue = false,
+    Flag = "FPSBoost",
+    Callback = function(state)
+        fpsBoostEnabled = state
+        if state then
+           
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    
+                    originalMaterials[obj] = obj.Material
+                    obj.Material = Enum.Material.SmoothPlastic
+                end
+                if obj:IsA("Texture") or obj:IsA("Decal") then
+                    obj.Transparency = 1 
+                end
+            end
+            Rayfield:Notify({
+                Title = "🚀 FPS Booster",
+                Content = "เปิดโหมดประหยัดเฟรมแล้ว เกมจะลื่นขึ้น!",
+                Duration = 3
+            })
+        else
+            
+            for obj, mat in pairs(originalMaterials) do
+                if obj and obj.Parent then
+                    obj.Material = mat
+                end
+            end
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("Texture") or obj:IsA("Decal") then
+                    obj.Transparency = 0 
+                end
+            end
+            originalMaterials = {}
+            Rayfield:Notify({
+                Title = "🚀 FPS Booster",
+                Content = "ปิดโหมดประหยัดเฟรมแล้ว!",
+                Duration = 3
+            })
+        end
+    end
+})
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
     Content = "✨ ระบบทั้งหมดพร้อมใช้งานแล้ว พร้อม UI ระดับมืออาชีพ!",
