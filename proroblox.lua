@@ -12,7 +12,6 @@ end
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
 local Camera = workspace.CurrentCamera
 
 local Window = Rayfield:CreateWindow({
