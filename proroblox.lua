@@ -53,6 +53,7 @@ local originalMaterials = {}
 local fpsBoostEnabled = false
 local cinematic = false
 local realisticEnabled = false
+local pcModeEnabled = false
 
 local function toggleFly()
     local char = LocalPlayer.Character
@@ -407,7 +408,51 @@ local function toggleRealisticGraphics(state)
         })
     end
 end
+local function togglePCMode(state)
+    pcModeEnabled = state
+    local player = game.Players.LocalPlayer
+    local UIS = game:GetService("UserInputService")
 
+    if state then
+        UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+        UIS.MouseIconEnabled = true
+
+        for _, gui in pairs(player:WaitForChild("PlayerGui"):GetChildren()) do
+            if gui:IsA("ScreenGui") and (gui.Name == "TouchGui" or gui.Name == "MobileControls") then
+                gui.Enabled = false
+            end
+        end
+        local cam = workspace.CurrentCamera
+        cam.CameraType = Enum.CameraType.Custom
+        cam.CameraSubject = player.Character:WaitForChild("Humanoid")
+        cam.FieldOfView = 80
+
+        local sensitivity = 0.2
+        UIS.MouseDeltaSensitivity = sensitivity
+
+        Rayfield:Notify({
+            Title = "💻 PC Mode",
+            Content = "เปิดโหมดพีซีในมือถือแล้ว! หมุนกล้องได้อิสระ 🔥",
+            Duration = 3
+        })
+    else
+        UIS.MouseBehavior = Enum.MouseBehavior.Default
+        UIS.MouseIconEnabled = false
+        UIS.MouseDeltaSensitivity = 1
+
+        for _, gui in pairs(player:WaitForChild("PlayerGui"):GetChildren()) do
+            if gui:IsA("ScreenGui") and (gui.Name == "TouchGui" or gui.Name == "MobileControls") then
+                gui.Enabled = true
+            end
+        end
+
+        Rayfield:Notify({
+            Title = "📱 Mobile Mode",
+            Content = "กลับสู่โหมดมือถือแล้ว",
+            Duration = 3
+        })
+    end
+end
 
 local function refreshPlayerList()
     local playerNames = {}
@@ -891,6 +936,11 @@ VisualTab:CreateToggle({
     Name = "🌅 ภาพสมจริง (Realistic Graphics)",
     CurrentValue = false,
     Callback = toggleRealisticGraphics
+})
+UtilsTab:CreateToggle({
+    Name = "💻 โหมดพีซีในมือถือ (PC Mode)",
+    CurrentValue = false,
+    Callback = togglePCMode
 })
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
