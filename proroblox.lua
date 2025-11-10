@@ -46,7 +46,8 @@ local espEnabled = false
 local aimbotEnabled = false
 local aimbotRange = 200
 local selectedPlayer = nil
-local headViewEnabled = false
+local viewing = false
+local currentViewed = nil
 
 local function toggleFly()
     local char = LocalPlayer.Character
@@ -301,6 +302,45 @@ local function refreshPlayerList()
     end
     return playerNames
 end
+local function toggleViewPlayer()
+    if viewing then
+        viewing = false
+        currentViewed = nil
+        Rayfield:Notify({
+            Title = "👁‍🗨 View Disabled",
+            Content = "ออกจากโหมดส่องผู้เล่นแล้ว",
+            Duration = 2
+        })
+        return
+    end
+
+    if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("Head") then
+        viewing = true
+        currentViewed = selectedPlayer
+
+        Rayfield:Notify({
+            Title = "👁‍🗨 View Mode",
+            Content = "กำลังส่อง " .. selectedPlayer.Name,
+            Duration = 3
+        })
+
+        task.spawn(function()
+            while viewing and currentViewed and currentViewed.Character and currentViewed.Character:FindFirstChild("Head") do
+                task.wait()
+                Camera.CameraSubject = currentViewed.Character:FindFirstChild("Humanoid")
+            end
+            if not viewing then
+                Camera.CameraSubject = LocalPlayer.Character:FindFirstChild("Humanoid")
+            end
+        end)
+    else
+        Rayfield:Notify({
+            Title = "⚠️ ไม่สามารถส่องได้",
+            Content = "กรุณาเลือกผู้เล่นก่อน หรือผู้เล่นนั้นไม่มีตัวอยู่ในเกม",
+            Duration = 3
+        })
+    end
+end
 
 local MovementTab = Window:CreateTab("🚀 Movement Control", 4483362458)
 
@@ -531,58 +571,13 @@ TeleportTab:CreateButton({
     end
 })
 
-TeleportTab:CreateToggle({
-    Name = "🎥 เปิด/ปิดโหมดส่องผู้เล่น (Player Viewer)",
-    CurrentValue = false,
-    Flag = "PlayerView",
-    Callback = function(state)
-        headViewEnabled = state
-        Rayfield:Notify({
-            Title = "🎥 Player Viewer",
-            Content = state and "เปิดโหมดส่องผู้เล่นแล้ว 🔍" or "ปิดโหมดส่องผู้เล่นแล้ว 🚫",
-            Duration = 2
-        })
+TeleportTab:CreateButton({
+    Name = "👁‍🗨 ส่องผู้เล่นที่เลือก (View Player)",
+    Callback = function()
+        toggleViewPlayer()
     end
 })
 
-RunService.RenderStepped:Connect(function()
-	if headViewEnabled then
-		if selectedPlayer and Players:FindFirstChild(selectedPlayer.Name) then
-			local char = selectedPlayer.Character
-			if not char then return end
-
-			local head = char:FindFirstChild("Head") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart")
-			if head then
-		
-				local camPos = Camera.CFrame.Position
-				local targetPos = head.Position + Vector3.new(0, 0.2, 0) 
-				local lookVector = (targetPos - camPos).Unit
-				local distance = (targetPos - camPos).Magnitude
-
-				Camera.CFrame = CFrame.new(camPos, camPos + lookVector * distance)
-			else
-				task.spawn(function()
-					local foundPart = char:WaitForChild("Head", 5)
-					if not foundPart then
-						Rayfield:Notify({
-							Title = "⚠️ รอโหลดผู้เล่น...",
-							Content = "ผู้เล่น " .. selectedPlayer.Name .. " ยังไม่โหลดเต็ม กำลังรอ...",
-							Duration = 2
-						})
-					end
-				end)
-			end
-		else
-			headViewEnabled = false
-			selectedPlayer = nil
-			Rayfield:Notify({
-				Title = "🚫 ผู้เล่นออกจากเกม",
-				Content = "ระบบหยุดส่องอัตโนมัติ",
-				Duration = 3
-			})
-		end
-	end
-end)
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
     Content = "✨ ระบบทั้งหมดพร้อมใช้งานแล้ว พร้อม UI ระดับมืออาชีพ!",
