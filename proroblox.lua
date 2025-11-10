@@ -264,50 +264,7 @@ RunService.RenderStepped:Connect(function()
         end
     end
 end)
-local function setGodMode(state)
-    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    local hum = char:FindFirstChildOfClass("Humanoid")
 
-    if state then
-        
-        if hum then
-            hum.Name = "1"
-            local newHum = hum:Clone()
-            newHum.Parent = char
-            task.wait()
-            hum:Destroy()
-
-            Rayfield:Notify({
-                Title = "💎 God Mode",
-                Content = "เปิดโหมดอมตะแล้ว (อาจไม่ใช้ได้ทุกเกม)",
-                Duration = 3
-            })
-            godModeEnabled = true
-        else
-            Rayfield:Notify({
-                Title = "⚠️ God Mode",
-                Content = "ไม่พบ Humanoid ในตัวละคร",
-                Duration = 2
-            })
-        end
-    else
-       
-        godModeEnabled = false
-        task.spawn(function()
-            
-            task.wait(0.2)
-            pcall(function()
-                LocalPlayer:LoadCharacter()
-            end)
-        end)
-
-        Rayfield:Notify({
-            Title = "💀 God Mode",
-            Content = "ปิดโหมดอมตะแล้ว",
-            Duration = 3
-        })
-    end
-end
 
 local function toggleFullbright()
     game:GetService("Lighting").Brightness = 2
@@ -320,6 +277,54 @@ local function toggleFullbright()
         Duration = 3
     })
 end
+local function setGodMode(state)
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hum = char:FindFirstChildOfClass("Humanoid")
+
+    if not hum then
+        Rayfield:Notify({
+            Title = "⚠️ God Mode",
+            Content = "ไม่พบ Humanoid ในตัวละคร",
+            Duration = 2
+        })
+        return
+    end
+
+    if state then
+       
+        if not godModeEnabled then
+            hum.Name = "1"
+            local newHum = hum:Clone()
+            newHum.Parent = char
+            task.wait()
+            hum:Destroy()
+            newHum.Name = "Humanoid"
+
+            Rayfield:Notify({
+                Title = "💎 God Mode",
+                Content = "เปิดโหมดอมตะแล้ว (อาจไม่ใช้ได้ทุกเกม)",
+                Duration = 3
+            })
+
+            godModeEnabled = true
+        end
+    else
+        if godModeEnabled then
+            local currentHum = char:FindFirstChildOfClass("Humanoid")
+            if currentHum then
+                currentHum.Health = currentHum.MaxHealth
+                currentHum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+            end
+            Rayfield:Notify({
+                Title = "💀 God Mode",
+                Content = "ปิดโหมดอมตะแล้ว",
+                Duration = 3
+            })
+            godModeEnabled = false
+        end
+    end
+end
+
 
 local function refreshPlayerList()
     local playerNames = {}
