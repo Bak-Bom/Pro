@@ -970,28 +970,48 @@ UtilsTab:CreateToggle({
     Callback = togglePCMode
 })
 TeleportTab:CreateButton({
-    Name = "🧲 ดึงผู้เล่นมาหาเรา (Bring Player)",
+    Name = "🧲 ดึงผู้เล่นมาหาเรา (Realistic Pull)",
     Callback = function()
-        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local targetRoot = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
-            local myChar = LocalPlayer.Character
-            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-
-            if myRoot then
-                targetRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
-                Rayfield:Notify({
-                    Title = "🧲 ดึงสำเร็จ",
-                    Content = "ผู้เล่นถูกดึงมาหาคุณเรียบร้อยแล้ว!",
-                    Duration = 2
-                })
-            end
-        else
+        if not selectedPlayer or not selectedPlayer.Character then
             Rayfield:Notify({
-                Title = "⚠️ ไม่สามารถดึงได้",
-                Content = "กรุณาเลือกผู้เล่นก่อน หรือผู้เล่นอาจออกจากเกม",
+                Title = "⚠️ ข้อผิดพลาด",
+                Content = "กรุณาเลือกผู้เล่นก่อน",
                 Duration = 3
             })
+            return
         end
+
+        local targetRoot = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local myRoot = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+        if not (targetRoot and myRoot) then return end
+
+        if targetRoot:FindFirstChild("PullForce") then
+            targetRoot.PullForce:Destroy()
+        end
+
+        local bp = Instance.new("BodyPosition")
+        bp.Name = "PullForce"
+        bp.MaxForce = Vector3.new(500000, 500000, 500000)
+        bp.P = 5000
+        bp.D = 500
+        bp.Position = myRoot.Position + (myRoot.CFrame.LookVector * -3)
+        bp.Parent = targetRoot
+
+        Rayfield:Notify({
+            Title = "🧲 กำลังดึง...",
+            Content = "ผู้เล่นกำลังถูกดึงมาหาคุณ",
+            Duration = 2
+        })
+
+        task.wait(1.5)
+        bp:Destroy()
+
+        Rayfield:Notify({
+            Title = "✅ ดึงสำเร็จ",
+            Content = "ผู้เล่นถูกดึงมาหาคุณเรียบร้อยแล้ว!",
+            Duration = 2
+        })
     end
 })
 Rayfield:Notify({
