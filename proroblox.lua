@@ -54,8 +54,6 @@ local fpsBoostEnabled = false
 local cinematic = false
 local realisticEnabled = false
 local pcModeEnabled = false
-local mouseGUI = nil
-local clickSound = nil
 local win11Enabled = false
 
 local function toggleFly()
@@ -411,90 +409,43 @@ local function toggleRealisticGraphics(state)
         })
     end
 end
+
 local function togglePCMode(state)
     pcModeEnabled = state
     local player = game.Players.LocalPlayer
     local UIS = game:GetService("UserInputService")
-    local cam = workspace.CurrentCamera
-    local playerGui = player:WaitForChild("PlayerGui")
 
     if state then
-        for _, gui in pairs(playerGui:GetChildren()) do
+        
+        UIS.MouseBehavior = Enum.MouseBehavior.LockCenter
+        UIS.MouseIconEnabled = true
+
+        for _, gui in pairs(player:WaitForChild("PlayerGui"):GetChildren()) do
             if gui:IsA("ScreenGui") and (gui.Name == "TouchGui" or gui.Name == "MobileControls") then
                 gui.Enabled = false
             end
         end
 
+        local cam = workspace.CurrentCamera
         cam.CameraType = Enum.CameraType.Custom
         cam.CameraSubject = player.Character:WaitForChild("Humanoid")
         cam.FieldOfView = 80
 
-        UIS.MouseIconEnabled = false
-        UIS.MouseBehavior = Enum.MouseBehavior.Default
-        UIS.MouseDeltaSensitivity = 0.2
-
-        mouseGUI = Instance.new("ScreenGui", playerGui)
-        mouseGUI.Name = "FakeMouse"
-
-        local cursor = Instance.new("ImageLabel", mouseGUI)
-        cursor.Name = "Cursor"
-        cursor.Size = UDim2.new(0, 32, 0, 32)
-        cursor.Image = "rbxassetid://7072718366" -- ไอคอนเมาส์ Roblox
-        cursor.BackgroundTransparency = 1
-        cursor.ZIndex = 10
-
-        local posText = Instance.new("TextLabel", mouseGUI)
-        posText.Name = "MousePos"
-        posText.Size = UDim2.new(0, 200, 0, 30)
-        posText.Position = UDim2.new(0, 10, 1, -40)
-        posText.BackgroundTransparency = 1
-        posText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        posText.Font = Enum.Font.SourceSansBold
-        posText.TextScaled = true
-        posText.Text = "Mouse (0, 0)"
-
-        clickSound = Instance.new("Sound", workspace)
-        clickSound.SoundId = "rbxassetid://12221967"
-        clickSound.Volume = 0.7
-
-        local mousePos = Vector2.new(0, 0)
-        UIS.TouchMoved:Connect(function(touch)
-            if not pcModeEnabled then return end
-            mousePos = touch.Position
-            cursor.Position = UDim2.new(0, mousePos.X, 0, mousePos.Y)
-            posText.Text = string.format("Mouse (%d, %d)", mousePos.X, mousePos.Y)
-        end)
-
-        UIS.TouchTap:Connect(function(touch)
-            if not pcModeEnabled then return end
-            clickSound:Play()
-
-            local flash = Instance.new("Frame", mouseGUI)
-            flash.Size = UDim2.new(0, 20, 0, 20)
-            flash.Position = UDim2.new(0, mousePos.X - 10, 0, mousePos.Y - 10)
-            flash.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
-            flash.BorderSizePixel = 0
-            flash.BackgroundTransparency = 0.3
-            flash.ZIndex = 15
-
-            game.TweenService:Create(flash, TweenInfo.new(0.3), {BackgroundTransparency = 1, Size = UDim2.new(0, 50, 0, 50)}):Play()
-            game:GetService("Debris"):AddItem(flash, 0.4)
-        end)
+        local sensitivity = 0.2
+        UIS.MouseDeltaSensitivity = sensitivity
 
         Rayfield:Notify({
             Title = "💻 PC Mode",
-            Content = "มือถือของคุณกลายเป็นพีซีแล้ว! พร้อมเมาส์และเอฟเฟกต์จริง 🎯",
-            Duration = 4
+            Content = "เปิดโหมดพีซีในมือถือแล้ว! หมุนกล้องได้อิสระ 🔥",
+            Duration = 3
         })
-
     else
-        if mouseGUI then mouseGUI:Destroy() end
-        if clickSound then clickSound:Destroy() end
+        
         UIS.MouseBehavior = Enum.MouseBehavior.Default
         UIS.MouseIconEnabled = false
         UIS.MouseDeltaSensitivity = 1
 
-        for _, gui in pairs(playerGui:GetChildren()) do
+        for _, gui in pairs(player:WaitForChild("PlayerGui"):GetChildren()) do
             if gui:IsA("ScreenGui") and (gui.Name == "TouchGui" or gui.Name == "MobileControls") then
                 gui.Enabled = true
             end
@@ -502,7 +453,7 @@ local function togglePCMode(state)
 
         Rayfield:Notify({
             Title = "📱 Mobile Mode",
-            Content = "กลับสู่โหมดมือถือเรียบร้อย ✅",
+            Content = "กลับสู่โหมดมือถือแล้ว",
             Duration = 3
         })
     end
