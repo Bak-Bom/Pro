@@ -14,6 +14,7 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer 
 local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
+local player = game.Players.LocalPlayer
 
 
 local Window = Rayfield:CreateWindow({
@@ -968,47 +969,72 @@ UtilsTab:CreateToggle({
     CurrentValue = false,
     Callback = togglePCMode
 })
-UtilsTab:CreateInput({
-    Name = "🧲 ดึงผู้เล่น (พิมพ์ชื่อแล้ว Enter)",
-    PlaceholderText = "เช่น Player123",
-    RemoveTextAfterFocusLost = false,
-    Flag = "PullPlayerInput",
-    Callback = function(text)
-        local player = game.Players.LocalPlayer
-        local char = player.Character
-        if not char then return end
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        if not hrp then return end
 
-        local target = nil
-        for _, p in pairs(game.Players:GetPlayers()) do
-            if string.find(string.lower(p.Name), string.lower(text)) then
-                target = p
-                break
+local PullDropdown = UtilsTab:CreateDropdown({
+    Name = "🧲 เลือกผู้เล่นที่ต้องการดึง",
+    Options = {},
+    CurrentOption = {},
+    Flag = "PullPlayerDropdown",
+    Callback = function(option)
+        selectedPlayer = option[1]
+        Rayfield:Notify({
+            Title = "🧲 เลือกผู้เล่น",
+            Content = "คุณเลือก: " .. selectedPlayer,
+            Duration = 2
+        })
+    end
+})
+
+task.spawn(function()
+    while task.wait(2) do
+        local names = {}
+        for _, p in ipairs(game.Players:GetPlayers()) do
+            if p ~= player then
+                table.insert(names, p.Name)
             end
         end
+        PullDropdown:SetOptions(names)
+    end
+end)
 
-        if not target or not target.Character then
+UtilsTab:CreateButton({
+    Name = "💥 ดึงผู้เล่นมาหาเรา",
+    Callback = function()
+        if not selectedPlayer then
             Rayfield:Notify({
                 Title = "⚠️ ดึงผู้เล่น",
-                Content = "ไม่พบผู้เล่นชื่อ: " .. text,
+                Content = "กรุณาเลือกผู้เล่นก่อน!",
                 Duration = 2
             })
             return
         end
 
-        local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
-        if targetHRP then
+        local target = game.Players:FindFirstChild(selectedPlayer)
+        if not target then
+            Rayfield:Notify({
+                Title = "⚠️ ดึงผู้เล่น",
+                Content = "ไม่พบผู้เล่น: " .. selectedPlayer,
+                Duration = 2
+            })
+            return
+        end
+
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local targetChar = target.Character
+        local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+
+        if hrp and targetHRP then
             targetHRP.CFrame = hrp.CFrame * CFrame.new(0, 0, -3)
             Rayfield:Notify({
                 Title = "🧲 ดึงผู้เล่น",
-                Content = "ดึง " .. target.Name .. " มาหาคุณแล้ว!",
+                Content = "คุณดึง " .. target.Name .. " มาหาคุณแล้ว!",
                 Duration = 2
             })
         else
             Rayfield:Notify({
                 Title = "⚠️ ดึงผู้เล่น",
-                Content = "ไม่พบ HumanoidRootPart ของเป้าหมาย!",
+                Content = "ไม่พบตำแหน่งของผู้เล่นเป้าหมาย!",
                 Duration = 2
             })
         end
