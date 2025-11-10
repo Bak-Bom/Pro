@@ -12,8 +12,8 @@ end
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
 
 local Window = Rayfield:CreateWindow({
     Name = "🌌 BomDev X Pro | Ultimate Hub",
@@ -465,12 +465,22 @@ local playerDropdown = TeleportTab:CreateDropdown({
     CurrentOption = nil,
     Flag = "PlayerList",
     Callback = function(option)
-        selectedPlayer = Players:FindFirstChild(option)
-        Rayfield:Notify({
-            Title = "🎯 เลือกผู้เล่นแล้ว",
-            Content = "คุณเลือก " .. tostring(option),
-            Duration = 2
-        })
+        local plr = Players:FindFirstChild(option)
+        if plr then
+            selectedPlayer = plr
+            Rayfield:Notify({
+                Title = "🎯 เลือกผู้เล่นแล้ว",
+                Content = "คุณเลือก " .. tostring(option),
+                Duration = 2
+            })
+        else
+            selectedPlayer = nil
+            Rayfield:Notify({
+                Title = "⚠️ ไม่พบผู้เล่น",
+                Content = "ไม่สามารถเลือกผู้เล่นนี้ได้ อาจออกจากเกมแล้ว",
+                Duration = 2
+            })
+        end
     end
 })
 
@@ -491,12 +501,18 @@ TeleportTab:CreateButton({
     Callback = function()
         if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
-            local char = LocalPlayer.Character
+            local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
             if char and char:FindFirstChild("HumanoidRootPart") then
                 char:MoveTo(targetPos + Vector3.new(0, 3, 0))
                 Rayfield:Notify({
                     Title = "⚡ วาร์ปสำเร็จ",
                     Content = "คุณถูกวาร์ปไปหา " .. selectedPlayer.Name .. " แล้ว!",
+                    Duration = 2
+                })
+            else
+                Rayfield:Notify({
+                    Title = "⚠️ ตัวละครไม่สมบูรณ์",
+                    Content = "ไม่พบ HumanoidRootPart ของคุณ",
                     Duration = 2
                 })
             end
@@ -518,17 +534,38 @@ TeleportTab:CreateToggle({
         headViewEnabled = state
         Rayfield:Notify({
             Title = "🎥 Player Viewer",
-            Content = state and "เปิดโหมดส่องผู้เล่นแล้ว" or "ปิดโหมดส่องผู้เล่นแล้ว",
+            Content = state and "เปิดโหมดส่องผู้เล่นแล้ว 🔍" or "ปิดโหมดส่องผู้เล่นแล้ว 🚫",
             Duration = 2
         })
     end
 })
 
 RunService.RenderStepped:Connect(function()
-    if headViewEnabled and selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
-        local camPos = Camera.CFrame.Position
-        Camera.CFrame = CFrame.new(camPos, targetPos)
+    if headViewEnabled then
+        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local target = selectedPlayer.Character.HumanoidRootPart
+            local camPos = Camera.CFrame.Position
+            Camera.CFrame = CFrame.new(camPos, target.Position)
+        else
+            
+            headViewEnabled = false
+            Rayfield:Notify({
+                Title = "⚠️ ผู้เล่นหายไป",
+                Content = "ปิดโหมดส่องผู้เล่นอัตโนมัติ",
+                Duration = 2
+            })
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function()
+    playerDropdown:Set(refreshPlayerList())
+end)
+Players.PlayerRemoving:Connect(function()
+    playerDropdown:Set(refreshPlayerList())
+    if selectedPlayer and not Players:FindFirstChild(selectedPlayer.Name) then
+        selectedPlayer = nil
+        headViewEnabled = false
     end
 end)
 Rayfield:Notify({
