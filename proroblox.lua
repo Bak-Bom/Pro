@@ -51,6 +51,8 @@ local currentViewed = nil
 local godModeEnabled = false
 local originalMaterials = {}
 local fpsBoostEnabled = false
+local cinematic = false
+local realisticEnabled = false
 
 local function toggleFly()
     local char = LocalPlayer.Character
@@ -348,6 +350,63 @@ local function toggleAntiAFK(state)
     end
 end
 
+local function toggleRealisticGraphics(state)
+    realisticEnabled = state
+    local lighting = game:GetService("Lighting")
+
+    if state then
+        lighting.Brightness = 3
+        lighting.GlobalShadows = true
+        lighting.EnvironmentDiffuseScale = 0.5
+        lighting.EnvironmentSpecularScale = 1
+        lighting.ClockTime = 16
+        lighting.FogEnd = 1000
+        lighting.FogColor = Color3.fromRGB(200, 200, 255)
+        lighting.Ambient = Color3.fromRGB(255, 240, 220)
+        lighting.OutdoorAmbient = Color3.fromRGB(180, 180, 200)
+        
+        local sunRays = Instance.new("SunRaysEffect", lighting)
+        sunRays.Intensity = 0.25
+        
+        local bloom = Instance.new("BloomEffect", lighting)
+        bloom.Intensity = 0.4
+        bloom.Size = 24
+        
+        local cc = Instance.new("ColorCorrectionEffect", lighting)
+        cc.Saturation = 0.2
+        cc.Contrast = 0.3
+        cc.Brightness = 0.05
+        
+        local dof = Instance.new("DepthOfFieldEffect", lighting)
+        dof.FarIntensity = 0.4
+        dof.FocusDistance = 15
+        dof.InFocusRadius = 25
+        
+        Rayfield:Notify({
+            Title = "🌅 Realistic Graphics",
+            Content = "เปิดภาพสมจริงแล้ว!",
+            Duration = 3
+        })
+    else
+       
+        for _, v in pairs(lighting:GetChildren()) do
+            if v:IsA("BloomEffect") or v:IsA("SunRaysEffect") or v:IsA("ColorCorrectionEffect") or v:IsA("DepthOfFieldEffect") then
+                v:Destroy()
+            end
+        end
+        lighting.Brightness = 2
+        lighting.ClockTime = 14
+        lighting.FogEnd = 100000
+        lighting.Ambient = Color3.fromRGB(127, 127, 127)
+        lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+        
+        Rayfield:Notify({
+            Title = "🌅 Realistic Graphics",
+            Content = "ปิดโหมดภาพสมจริงแล้ว",
+            Duration = 3
+        })
+    end
+end
 
 
 local function refreshPlayerList()
@@ -807,6 +866,31 @@ UtilsTab:CreateButton({
             Rayfield:Notify({Title="⚠️ ไม่มีจุดบันทึก", Content="โปรดบันทึกก่อน!", Duration=2})
         end
     end
+})
+
+VisualTab:CreateToggle({
+    Name = "🎥 โหมดภาพยนตร์ (Cinematic Mode)",
+    CurrentValue = false,
+    Flag = "Cinematic",
+    Callback = function(v)
+        cinematic = v
+        game:GetService("StarterGui"):SetCore("TopbarEnabled", not v)
+        for _, gui in pairs(LocalPlayer:WaitForChild("PlayerGui"):GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                gui.Enabled = not v
+            end
+        end
+        Rayfield:Notify({
+            Title = "🎬 Cinematic Mode",
+            Content = v and "เปิดโหมดภาพยนตร์แล้ว" or "กลับสู่โหมดปกติ",
+            Duration = 3
+        })
+    end
+})
+VisualTab:CreateToggle({
+    Name = "🌅 ภาพสมจริง (Realistic Graphics)",
+    CurrentValue = false,
+    Callback = toggleRealisticGraphics
 })
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
