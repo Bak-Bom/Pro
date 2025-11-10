@@ -12,8 +12,8 @@ end
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 local Camera = workspace.CurrentCamera
-local LocalPlayer = Players.LocalPlayer
 
 local Window = Rayfield:CreateWindow({
     Name = "🌌 BomDev X Pro | Ultimate Hub",
