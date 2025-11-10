@@ -54,7 +54,6 @@ local fpsBoostEnabled = false
 local cinematic = false
 local realisticEnabled = false
 local pcModeEnabled = false
-local win11Enabled = false
 
 local function toggleFly()
     local char = LocalPlayer.Character
@@ -454,91 +453,6 @@ local function togglePCMode(state)
         Rayfield:Notify({
             Title = "📱 Mobile Mode",
             Content = "กลับสู่โหมดมือถือแล้ว",
-            Duration = 3
-        })
-    end
-end
-
-
-local function toggleWindows11Mode(state)
-    win11Enabled = state
-    local lighting = game:GetService("Lighting")
-    local player = game.Players.LocalPlayer
-    local UIS = game:GetService("UserInputService")
-    local blur = lighting:FindFirstChild("Win11Blur")
-    local ui = player:FindFirstChild("PlayerGui")
-
-    if state then
-       
-        lighting.Brightness = 2.8
-        lighting.Ambient = Color3.fromRGB(200, 220, 255)
-        lighting.OutdoorAmbient = Color3.fromRGB(180, 200, 255)
-
-        local bloom = Instance.new("BloomEffect", lighting)
-        bloom.Name = "Win11Bloom"
-        bloom.Intensity = 0.45
-        bloom.Size = 25
-
-        local sun = Instance.new("SunRaysEffect", lighting)
-        sun.Intensity = 0.2
-        sun.Name = "Win11Sun"
-
-        local color = Instance.new("ColorCorrectionEffect", lighting)
-        color.Name = "Win11Color"
-        color.TintColor = Color3.fromRGB(245, 245, 255)
-        color.Contrast = 0.25
-        color.Saturation = 0.15
-
-        if not blur then
-            local newBlur = Instance.new("BlurEffect", lighting)
-            newBlur.Name = "Win11Blur"
-            newBlur.Size = 12
-        end
-
-        local gui = Instance.new("ScreenGui", ui)
-        gui.Name = "Win11UI"
-        local frame = Instance.new("Frame", gui)
-        frame.Size = UDim2.new(0.4, 0, 0.5, 0)
-        frame.Position = UDim2.new(0.3, 0, 0.25, 0)
-        frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-        frame.BackgroundTransparency = 0.15
-        frame.BorderSizePixel = 0
-        frame.ClipsDescendants = true
-        frame.Active = true
-        frame.Draggable = true
-        frame.ZIndex = 5
-        frame.BackgroundTransparency = 0.2
-        frame:SetAttribute("Corner", Instance.new("UICorner", frame)).CornerRadius = UDim.new(0, 16)
-
-        local title = Instance.new("TextLabel", frame)
-        title.Text = "💻 Windows 11 Mode Panel"
-        title.Size = UDim2.new(1, 0, 0, 35)
-        title.BackgroundTransparency = 1
-        title.Font = Enum.Font.SourceSansBold
-        title.TextScaled = true
-        title.TextColor3 = Color3.fromRGB(0, 0, 0)
-
-        UIS.MouseIconEnabled = true
-        UIS.MouseBehavior = Enum.MouseBehavior.Default
-
-        Rayfield:Notify({
-            Title = "💻 Windows 11 Mode",
-            Content = "เปิดโหมดพีซีภาพสวย UI เหมือน Windows 11 แล้ว!",
-            Duration = 3
-        })
-    else
-        for _, v in pairs(lighting:GetChildren()) do
-            if v.Name:match("^Win11") then v:Destroy() end
-        end
-        local g = ui:FindFirstChild("Win11UI")
-        if g then g:Destroy() end
-
-        UIS.MouseBehavior = Enum.MouseBehavior.Default
-        UIS.MouseIconEnabled = false
-
-        Rayfield:Notify({
-            Title = "💻 Windows 11 Mode",
-            Content = "ปิดโหมด Windows 11 แล้ว",
             Duration = 3
         })
     end
@@ -1032,11 +946,7 @@ UtilsTab:CreateToggle({
     CurrentValue = false,
     Callback = togglePCMode
 })
-VisualTab:CreateToggle({
-    Name = "💻 โหมด Windows 11 สมจริง",
-    CurrentValue = false,
-    Callback = toggleWindows11Mode
-})
+
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
     Content = "✨ ระบบทั้งหมดพร้อมใช้งานแล้ว พร้อม UI ระดับมืออาชีพ!",
