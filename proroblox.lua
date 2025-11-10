@@ -970,65 +970,6 @@ UtilsTab:CreateToggle({
     Callback = togglePCMode
 })
 
-local PullDropdown = UtilsTab:CreateDropdown({
-    Name = "🧲 เลือกผู้เล่นที่ต้องการดึง",
-    Options = {},
-    CurrentOption = {},
-    Flag = "PullPlayerDropdown",
-    Callback = function(option)
-        selectedPlayer = option[1]
-        Rayfield:Notify({
-            Title = "🧲 เลือกผู้เล่น",
-            Content = "คุณเลือก: " .. selectedPlayer,
-            Duration = 2
-        })
-    end
-})
-
-task.spawn(function()
-    while task.wait(2) do
-        local names = {}
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= LocalPlayer then
-                table.insert(names, p.Name)
-            end
-        end
-        PullDropdown:SetOptions(names)
-    end
-end)
-
-PullDropdown:Callback(function(option)
-    
-    selectedPlayer = option
-    Rayfield:Notify({ Title = "เลือกผู้เล่น", Content = "คุณเลือก: " .. tostring(selectedPlayer), Duration = 2 })
-end)
-
-UtilsTab:CreateButton({
-    Name = "ดึงผู้เล่นมาหาเรา",
-    Callback = function()
-        if type(selectedPlayer) ~= "string" or selectedPlayer == "" then
-            Rayfield:Notify({ Title = "⚠️ ดึงผู้เล่น", Content = "กรุณาเลือกผู้เล่นก่อน!", Duration = 2 })
-            return
-        end
-
-        local target = Players:FindFirstChild(selectedPlayer)
-        if not target or not target.Character then
-            Rayfield:Notify({ Title = "⚠️ ดึงผู้เล่น", Content = "ไม่พบผู้เล่น: " .. selectedPlayer, Duration = 2 })
-            return
-        end
-
-        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local hrp = char:FindFirstChild("HumanoidRootPart")
-        local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
-
-        if hrp and targetHRP then
-            targetHRP.CFrame = hrp.CFrame * CFrame.new(0,0,-3)
-            Rayfield:Notify({ Title = "ดึงผู้เล่น", Content = "คุณดึง " .. target.Name .. " มาหาคุณแล้ว!", Duration = 2 })
-        else
-            Rayfield:Notify({ Title = "⚠️ ดึงผู้เล่น", Content = "ไม่พบตำแหน่งของผู้เล่นเป้าหมาย!", Duration = 2 })
-        end
-    end
-})
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
     Content = "✨ ระบบทั้งหมดพร้อมใช้งานแล้ว พร้อม UI ระดับมืออาชีพ!",
