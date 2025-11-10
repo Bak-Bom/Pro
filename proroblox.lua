@@ -745,6 +745,69 @@ UtilsTab:CreateToggle({
         end
     end
 })
+UtilsTab:CreateToggle({
+    Name = "🪂 ไม่ตกเสียหาย (No Fall Damage)",
+    CurrentValue = false,
+    Flag = "NoFallDamage",
+    Callback = function(state)
+        if state then
+            Rayfield:Notify({Title="🪂 No Fall Damage", Content="เปิดแล้ว!", Duration=2})
+            LocalPlayer.CharacterAdded:Connect(function(char)
+                local hum = char:WaitForChild("Humanoid")
+                hum.PlatformStand = false
+                hum.FloorMaterial = Enum.Material.Air
+            end)
+            if LocalPlayer.Character then
+                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if hum then hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false) end
+            end
+        else
+            Rayfield:Notify({Title="🪂 No Fall Damage", Content="ปิดแล้ว!", Duration=2})
+            if LocalPlayer.Character then
+                local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                if hum then hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true) end
+            end
+        end
+    end
+})
+UtilsTab:CreateToggle({
+    Name = "🌊 เดินบนน้ำ (Walk on Water)",
+    CurrentValue = false,
+    Flag = "WalkOnWater",
+    Callback = function(state)
+        if state then
+            Rayfield:Notify({Title="🌊 Walk on Water", Content="เปิดแล้ว!", Duration=2})
+            workspace.Terrain.WaterWaveSpeed = 0
+            workspace.Terrain.WaterWaveSize = 0
+            LocalPlayer.CharacterAdded:Connect(function(char)
+                char:WaitForChild("HumanoidRootPart").CanCollide = true
+            end)
+        else
+            Rayfield:Notify({Title="🌊 Walk on Water", Content="ปิดแล้ว!", Duration=2})
+            workspace.Terrain.WaterWaveSpeed = 1
+            workspace.Terrain.WaterWaveSize = 1
+        end
+    end
+})
+UtilsTab:CreateButton({
+    Name = "📍 บันทึกตำแหน่งปัจจุบัน",
+    Callback = function()
+        local pos = LocalPlayer.Character.HumanoidRootPart.Position
+        Rayfield:Notify({Title="📍 บันทึกแล้ว", Content="ตำแหน่งถูกบันทึก!", Duration=2})
+        _G.SavedPosition = pos
+    end
+})
+UtilsTab:CreateButton({
+    Name = "🚀 วาร์ปไปตำแหน่งบันทึก",
+    Callback = function()
+        if _G.SavedPosition then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(_G.SavedPosition + Vector3.new(0,5,0))
+            Rayfield:Notify({Title="🚀 วาร์ปแล้ว", Content="ไปยังจุดที่บันทึกไว้!", Duration=2})
+        else
+            Rayfield:Notify({Title="⚠️ ไม่มีจุดบันทึก", Content="โปรดบันทึกก่อน!", Duration=2})
+        end
+    end
+})
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
     Content = "✨ ระบบทั้งหมดพร้อมใช้งานแล้ว พร้อม UI ระดับมืออาชีพ!",
