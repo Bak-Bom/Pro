@@ -41,6 +41,9 @@ local jumpValue = 100
 local noclipEnabled = false
 local invisible = false
 local savedCharacter = nil
+local espEnabled = false
+local aimbotEnabled = false
+local aimbotRange = 200
 
 local function toggleFly()
     local char = LocalPlayer.Character
@@ -205,6 +208,92 @@ LocalPlayer.CharacterAdded:Connect(function(char)
     end
 end)
 
+local function toggleESP(state)
+    espEnabled = state
+    Rayfield:Notify({
+        Title = "👁 Player ESP",
+        Content = state and "เปิด ESP แล้ว" or "ปิด ESP แล้ว",
+        Duration = 2
+    })
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local highlight = player.Character:FindFirstChildOfClass("Highlight")
+            if state then
+                if not highlight then
+                    highlight = Instance.new("Highlight")
+                    highlight.FillTransparency = 1
+                    highlight.OutlineColor = Color3.fromRGB(0, 255, 255)
+                    highlight.Parent = player.Character
+                end
+            else
+                if highlight then
+                    highlight:Destroy()
+                end
+            end
+        end
+    end
+end
+
+local function toggleGodMode()
+    local char = LocalPlayer.Character
+    if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        hum.Name = "1"
+        local newHum = hum:Clone()
+        newHum.Parent = char
+        task.wait()
+        hum:Destroy()
+        Rayfield:Notify({
+            Title = "💎 God Mode",
+            Content = "เปิดโหมดอมตะแล้ว (อาจไม่ใช้ได้ทุกเกม)",
+            Duration = 3
+        })
+    end
+end
+
+local function getClosestPlayer()
+    local closest, dist = nil, math.huge
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("Head") then
+            local headPos = player.Character.Head.Position
+            local magnitude = (Camera.CFrame.Position - headPos).Magnitude
+            if magnitude < dist and magnitude < aimbotRange then
+                dist = magnitude
+                closest = player
+            end
+        end
+    end
+    return closest
+end
+
+RunService.RenderStepped:Connect(function()
+    if aimbotEnabled then
+        local target = getClosestPlayer()
+        if target and target.Character and target.Character:FindFirstChild("Head") then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Character.Head.Position)
+        end
+    end
+end)
+
+local function toggleFullbright()
+    game:GetService("Lighting").Brightness = 2
+    game:GetService("Lighting").ClockTime = 14
+    game:GetService("Lighting").FogEnd = 100000
+    game:GetService("Lighting").GlobalShadows = false
+    Rayfield:Notify({
+        Title = "🌞 Fullbright",
+        Content = "เปิดโหมดกลางวันถาวรแล้ว!",
+        Duration = 3
+    })
+end
+
+VisualTab:CreateButton({
+    Name = "🌞 เปิดแสงสว่าง (Fullbright)",
+    Callback = toggleFullbright
+})
+
 local MovementTab = Window:CreateTab("🚀 Movement Control", 4483362458)
 
 MovementTab:CreateToggle({
@@ -295,6 +384,151 @@ MovementTab:CreateToggle({
     end
 })
 
+MovementTab:CreateToggle({
+    Name = "👁 มองเห็นผู้เล่น (ESP)",
+    CurrentValue = false,
+    Flag = "ESP",
+    Callback = toggleESP
+})
+MovementTab:CreateButton({
+    Name = "💎 โหมดอมตะ (God Mode)",
+    Callback = toggleGodMode
+})
+
+local CombatTab = Window:CreateTab("⚔️ Combat System", 4483362458)
+
+CombatTab:CreateToggle({
+    Name = "🎯 Aimbot (ล็อกเป้า)",
+    CurrentValue = false,
+    Flag = "Aimbot",
+    Callback = function(v)
+        aimbotEnabled = v
+        Rayfield:Notify({
+            Title = "🎯 Aimbot",
+            Content = v and "เปิดระบบล็อกเป้าแล้ว" or "ปิดระบบล็อกเป้าแล้ว",
+            Duration = 2
+        })
+    end
+})
+
+local VisualTab = Window:CreateTab("🌈 Visual Settings", 4483362458)
+
+VisualTab:CreateButton({
+    Name = "🌫 ลบหมอกในเกม",
+    Callback = function()
+        game:GetService("Lighting").FogEnd = 999999
+        Rayfield:Notify({
+            Title = "🌫 ลบหมอก",
+            Content = "ลบหมอกออกหมดแล้ว!",
+            Duration = 2
+        })
+    end
+})
+local UtilsTab = Window:CreateTab("🧰 Utilities", 4483362458)
+
+UtilsTab:CreateButton({
+    Name = "🔁 Rejoin เซิร์ฟเวอร์",
+    Callback = function()
+        game:GetService("TeleportService"):Teleport(game.PlaceId, LocalPlayer)
+    end
+})
+
+UtilsTab:CreateButton({
+    Name = "🧾 คัดลอก Place ID",
+    Callback = function()
+        setclipboard(tostring(game.PlaceId))
+        Rayfield:Notify({
+            Title = "📋 คัดลอกแล้ว",
+            Content = "คัดลอก Place ID ไปยังคลิปบอร์ดแล้ว",
+            Duration = 2
+        })
+    end
+})
+local TeleportTab = Window:CreateTab("🧭 Teleport & Viewer", 4483362458)
+
+local selectedPlayer = nil
+local headViewEnabled = false
+
+local function refreshPlayerList()
+    local playerNames = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            table.insert(playerNames, player.Name)
+        end
+    end
+    return playerNames
+end
+
+local playerDropdown = TeleportTab:CreateDropdown({
+    Name = "👥 รายชื่อผู้เล่นในเซิร์ฟ",
+    Options = refreshPlayerList(),
+    CurrentOption = nil,
+    Flag = "PlayerList",
+    Callback = function(option)
+        selectedPlayer = Players:FindFirstChild(option)
+        Rayfield:Notify({
+            Title = "🎯 เลือกผู้เล่นแล้ว",
+            Content = "คุณเลือก " .. tostring(option),
+            Duration = 2
+        })
+    end
+})
+
+TeleportTab:CreateButton({
+    Name = "🔄 รีเฟรชรายชื่อผู้เล่น",
+    Callback = function()
+        playerDropdown:Set(refreshPlayerList())
+        Rayfield:Notify({
+            Title = "🔄 อัปเดตรายชื่อแล้ว",
+            Content = "รีเฟรชรายชื่อผู้เล่นในเซิร์ฟเวอร์แล้ว ✅",
+            Duration = 2
+        })
+    end
+})
+
+TeleportTab:CreateButton({
+    Name = "⚡ วาร์ปไปหาผู้เล่นที่เลือก",
+    Callback = function()
+        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char:MoveTo(targetPos + Vector3.new(0, 3, 0))
+                Rayfield:Notify({
+                    Title = "⚡ วาร์ปสำเร็จ",
+                    Content = "คุณถูกวาร์ปไปหา " .. selectedPlayer.Name .. " แล้ว!",
+                    Duration = 2
+                })
+            end
+        else
+            Rayfield:Notify({
+                Title = "❌ ไม่สามารถวาร์ปได้",
+                Content = "กรุณาเลือกผู้เล่นก่อน หรือผู้เล่นนั้นไม่มีตัวอยู่",
+                Duration = 2
+            })
+        end
+    end
+})
+
+TeleportTab:CreateToggle({
+    Name = "🎥 เปิด/ปิดโหมดส่องหัว (Head Viewer)",
+    CurrentValue = false,
+    Flag = "HeadView",
+    Callback = function(state)
+        headViewEnabled = state
+        Rayfield:Notify({
+            Title = "🎥 Head Viewer",
+            Content = state and "เปิดโหมดส่องหัวแล้ว" or "ปิดโหมดส่องหัวแล้ว",
+            Duration = 2
+        })
+    end
+})
+
+RunService.RenderStepped:Connect(function()
+    if headViewEnabled and selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("Head") then
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, selectedPlayer.Character.Head.Position)
+    end
+end)
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
     Content = "✨ ระบบทั้งหมดพร้อมใช้งานแล้ว พร้อม UI ระดับมืออาชีพ!",
