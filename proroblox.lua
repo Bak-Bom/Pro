@@ -465,12 +465,15 @@ local playerDropdown = TeleportTab:CreateDropdown({
     CurrentOption = nil,
     Flag = "PlayerList",
     Callback = function(option)
-        local plr = Players:FindFirstChild(option)
+        
+        local playerName = typeof(option) == "table" and option[1] or option
+        local plr = Players:FindFirstChild(playerName)
+
         if plr then
             selectedPlayer = plr
             Rayfield:Notify({
                 Title = "🎯 เลือกผู้เล่นแล้ว",
-                Content = "คุณเลือก " .. tostring(option),
+                Content = "คุณเลือก " .. tostring(playerName),
                 Duration = 2
             })
         else
@@ -502,6 +505,7 @@ TeleportTab:CreateButton({
         if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local targetPos = selectedPlayer.Character.HumanoidRootPart.Position
             local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
             if char and char:FindFirstChild("HumanoidRootPart") then
                 char:MoveTo(targetPos + Vector3.new(0, 3, 0))
                 Rayfield:Notify({
@@ -542,12 +546,10 @@ TeleportTab:CreateToggle({
 
 RunService.RenderStepped:Connect(function()
     if headViewEnabled then
-        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local target = selectedPlayer.Character.HumanoidRootPart
-            local camPos = Camera.CFrame.Position
-            Camera.CFrame = CFrame.new(camPos, target.Position)
+        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("Head") then
+            local targetHead = selectedPlayer.Character.Head
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
         else
-            
             headViewEnabled = false
             Rayfield:Notify({
                 Title = "⚠️ ผู้เล่นหายไป",
@@ -561,6 +563,7 @@ end)
 Players.PlayerAdded:Connect(function()
     playerDropdown:Set(refreshPlayerList())
 end)
+
 Players.PlayerRemoving:Connect(function()
     playerDropdown:Set(refreshPlayerList())
     if selectedPlayer and not Players:FindFirstChild(selectedPlayer.Name) then
