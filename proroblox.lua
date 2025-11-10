@@ -545,51 +545,42 @@ TeleportTab:CreateToggle({
 })
 
 RunService.RenderStepped:Connect(function()
-    if headViewEnabled then
-        
-        if selectedPlayer and Players:FindFirstChild(selectedPlayer.Name) then
-            local char = selectedPlayer.Character
-            if not char then return end 
+	if headViewEnabled then
+		if selectedPlayer and Players:FindFirstChild(selectedPlayer.Name) then
+			local char = selectedPlayer.Character
+			if not char then return end
 
-            local head = char:FindFirstChild("Head") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart")
-            if head then
-                
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
-            else
-                
-                task.spawn(function()
-                    local foundPart = char:WaitForChild("Head", 5)
-                    if not foundPart then
-                        Rayfield:Notify({
-                            Title = "⚠️ รอโหลดผู้เล่น...",
-                            Content = "ผู้เล่น " .. selectedPlayer.Name .. " ยังไม่โหลดเต็ม กำลังรอ...",
-                            Duration = 2
-                        })
-                    end
-                end)
-            end
-        else
-            
-            headViewEnabled = false
-            selectedPlayer = nil
-            Rayfield:Notify({
-                Title = "🚫 ผู้เล่นออกจากเกม",
-                Content = "ระบบหยุดส่องอัตโนมัติ",
-                Duration = 3
-            })
-        end
-    end
-end)
-Players.PlayerAdded:Connect(function()
-    playerDropdown:Set(refreshPlayerList())
-end)
+			local head = char:FindFirstChild("Head") or char:FindFirstChild("UpperTorso") or char:FindFirstChild("HumanoidRootPart")
+			if head then
+		
+				local camPos = Camera.CFrame.Position
+				local targetPos = head.Position + Vector3.new(0, 0.2, 0) 
+				local lookVector = (targetPos - camPos).Unit
+				local distance = (targetPos - camPos).Magnitude
 
-Players.PlayerRemoving:Connect(function()
-    playerDropdown:Set(refreshPlayerList())
-    if selectedPlayer and not Players:FindFirstChild(selectedPlayer.Name) then
-        selectedPlayer = nil
-        headViewEnabled = false
-    end
+				Camera.CFrame = CFrame.new(camPos, camPos + lookVector * distance)
+			else
+				task.spawn(function()
+					local foundPart = char:WaitForChild("Head", 5)
+					if not foundPart then
+						Rayfield:Notify({
+							Title = "⚠️ รอโหลดผู้เล่น...",
+							Content = "ผู้เล่น " .. selectedPlayer.Name .. " ยังไม่โหลดเต็ม กำลังรอ...",
+							Duration = 2
+						})
+					end
+				end)
+			end
+		else
+			headViewEnabled = false
+			selectedPlayer = nil
+			Rayfield:Notify({
+				Title = "🚫 ผู้เล่นออกจากเกม",
+				Content = "ระบบหยุดส่องอัตโนมัติ",
+				Duration = 3
+			})
+		end
+	end
 end)
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
