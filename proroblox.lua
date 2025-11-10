@@ -546,13 +546,31 @@ TeleportTab:CreateToggle({
 
 RunService.RenderStepped:Connect(function()
     if headViewEnabled then
-        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("Head") then
-            local targetHead = selectedPlayer.Character.Head
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
+        if selectedPlayer and selectedPlayer.Parent == Players then
+            local char = selectedPlayer.Character or selectedPlayer.CharacterAdded:Wait()
+            local head = char:FindFirstChild("Head")
+
+            if head then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
+            else
+                
+                task.spawn(function()
+                    local foundHead = char:WaitForChild("Head", 5)
+                    if not foundHead then
+                        Rayfield:Notify({
+                            Title = "⚠️ ไม่พบหัวผู้เล่น",
+                            Content = "กำลังรอให้ผู้เล่นโหลดตัวอีกครั้ง...",
+                            Duration = 2
+                        })
+                    end
+                end)
+            end
         else
+            
             headViewEnabled = false
+            selectedPlayer = nil
             Rayfield:Notify({
-                Title = "⚠️ ผู้เล่นหายไป",
+                Title = "🚫 ผู้เล่นออกจากเซิร์ฟเวอร์",
                 Content = "ปิดโหมดส่องผู้เล่นอัตโนมัติ",
                 Duration = 2
             })
