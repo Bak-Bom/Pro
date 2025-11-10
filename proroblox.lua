@@ -883,17 +883,39 @@ UtilsTab:CreateToggle({
     CurrentValue = false,
     Flag = "WalkOnWater",
     Callback = function(state)
+        local player = game.Players.LocalPlayer
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char:WaitForChild("HumanoidRootPart")
+
         if state then
             Rayfield:Notify({Title="🌊 Walk on Water", Content="เปิดแล้ว!", Duration=2})
-            workspace.Terrain.WaterWaveSpeed = 0
-            workspace.Terrain.WaterWaveSize = 0
-            LocalPlayer.CharacterAdded:Connect(function(char)
-                char:WaitForChild("HumanoidRootPart").CanCollide = true
+
+            local waterPlatform = Instance.new("Part")
+            waterPlatform.Name = "WaterWalkPart"
+            waterPlatform.Size = Vector3.new(1000, 1, 1000) 
+            waterPlatform.Anchored = true
+            waterPlatform.CanCollide = true
+            waterPlatform.Transparency = 1
+            waterPlatform.Material = Enum.Material.Glass
+            waterPlatform.Position = Vector3.new(hrp.Position.X, workspace.Terrain.WaterLevel, hrp.Position.Z)
+            waterPlatform.Parent = workspace
+            local runService = game:GetService("RunService")
+            local connection
+            connection = runService.Heartbeat:Connect(function()
+                if not state or not waterPlatform or not waterPlatform.Parent then
+                    connection:Disconnect()
+                    return
+                end
+                waterPlatform.Position = Vector3.new(hrp.Position.X, workspace.Terrain.WaterLevel, hrp.Position.Z)
             end)
+            waterPlatform:SetAttribute("IsWalkOnWaterPart", true)
         else
             Rayfield:Notify({Title="🌊 Walk on Water", Content="ปิดแล้ว!", Duration=2})
-            workspace.Terrain.WaterWaveSpeed = 1
-            workspace.Terrain.WaterWaveSize = 1
+            for _, part in pairs(workspace:GetChildren()) do
+                if part:GetAttribute("IsWalkOnWaterPart") then
+                    part:Destroy()
+                end
+            end
         end
     end
 })
