@@ -968,7 +968,52 @@ UtilsTab:CreateToggle({
     CurrentValue = false,
     Callback = togglePCMode
 })
+UtilsTab:CreateInput({
+    Name = "🧲 ดึงผู้เล่น (พิมพ์ชื่อแล้ว Enter)",
+    PlaceholderText = "เช่น Player123",
+    RemoveTextAfterFocusLost = false,
+    Flag = "PullPlayerInput",
+    Callback = function(text)
+        local player = game.Players.LocalPlayer
+        local char = player.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
 
+        local target = nil
+        for _, p in pairs(game.Players:GetPlayers()) do
+            if string.find(string.lower(p.Name), string.lower(text)) then
+                target = p
+                break
+            end
+        end
+
+        if not target or not target.Character then
+            Rayfield:Notify({
+                Title = "⚠️ ดึงผู้เล่น",
+                Content = "ไม่พบผู้เล่นชื่อ: " .. text,
+                Duration = 2
+            })
+            return
+        end
+
+        local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+        if targetHRP then
+            targetHRP.CFrame = hrp.CFrame * CFrame.new(0, 0, -3)
+            Rayfield:Notify({
+                Title = "🧲 ดึงผู้เล่น",
+                Content = "ดึง " .. target.Name .. " มาหาคุณแล้ว!",
+                Duration = 2
+            })
+        else
+            Rayfield:Notify({
+                Title = "⚠️ ดึงผู้เล่น",
+                Content = "ไม่พบ HumanoidRootPart ของเป้าหมาย!",
+                Duration = 2
+            })
+        end
+    end
+})
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
     Content = "✨ ระบบทั้งหมดพร้อมใช้งานแล้ว พร้อม UI ระดับมืออาชีพ!",
