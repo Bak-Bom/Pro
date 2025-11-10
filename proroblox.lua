@@ -988,8 +988,8 @@ local PullDropdown = UtilsTab:CreateDropdown({
 task.spawn(function()
     while task.wait(2) do
         local names = {}
-        for _, p in ipairs(game.Players:GetPlayers()) do
-            if p ~= player then
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer then
                 table.insert(names, p.Name)
             end
         end
@@ -997,46 +997,35 @@ task.spawn(function()
     end
 end)
 
+PullDropdown:Callback(function(option)
+    
+    selectedPlayer = option
+    Rayfield:Notify({ Title = "เลือกผู้เล่น", Content = "คุณเลือก: " .. tostring(selectedPlayer), Duration = 2 })
+end)
+
 UtilsTab:CreateButton({
-    Name = "💥 ดึงผู้เล่นมาหาเรา",
+    Name = "ดึงผู้เล่นมาหาเรา",
     Callback = function()
-        if not selectedPlayer then
-            Rayfield:Notify({
-                Title = "⚠️ ดึงผู้เล่น",
-                Content = "กรุณาเลือกผู้เล่นก่อน!",
-                Duration = 2
-            })
+        if type(selectedPlayer) ~= "string" or selectedPlayer == "" then
+            Rayfield:Notify({ Title = "⚠️ ดึงผู้เล่น", Content = "กรุณาเลือกผู้เล่นก่อน!", Duration = 2 })
             return
         end
 
-        local target = game.Players:FindFirstChild(selectedPlayer)
-        if not target then
-            Rayfield:Notify({
-                Title = "⚠️ ดึงผู้เล่น",
-                Content = "ไม่พบผู้เล่น: " .. selectedPlayer,
-                Duration = 2
-            })
+        local target = Players:FindFirstChild(selectedPlayer)
+        if not target or not target.Character then
+            Rayfield:Notify({ Title = "⚠️ ดึงผู้เล่น", Content = "ไม่พบผู้เล่น: " .. selectedPlayer, Duration = 2 })
             return
         end
 
-        local char = player.Character or player.CharacterAdded:Wait()
+        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
         local hrp = char:FindFirstChild("HumanoidRootPart")
-        local targetChar = target.Character
-        local targetHRP = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+        local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
 
         if hrp and targetHRP then
-            targetHRP.CFrame = hrp.CFrame * CFrame.new(0, 0, -3)
-            Rayfield:Notify({
-                Title = "🧲 ดึงผู้เล่น",
-                Content = "คุณดึง " .. target.Name .. " มาหาคุณแล้ว!",
-                Duration = 2
-            })
+            targetHRP.CFrame = hrp.CFrame * CFrame.new(0,0,-3)
+            Rayfield:Notify({ Title = "ดึงผู้เล่น", Content = "คุณดึง " .. target.Name .. " มาหาคุณแล้ว!", Duration = 2 })
         else
-            Rayfield:Notify({
-                Title = "⚠️ ดึงผู้เล่น",
-                Content = "ไม่พบตำแหน่งของผู้เล่นเป้าหมาย!",
-                Duration = 2
-            })
+            Rayfield:Notify({ Title = "⚠️ ดึงผู้เล่น", Content = "ไม่พบตำแหน่งของผู้เล่นเป้าหมาย!", Duration = 2 })
         end
     end
 })
