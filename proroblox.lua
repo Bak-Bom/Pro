@@ -969,7 +969,31 @@ UtilsTab:CreateToggle({
     CurrentValue = false,
     Callback = togglePCMode
 })
+TeleportTab:CreateButton({
+    Name = "🧲 ดึงผู้เล่นมาหาเรา (Bring Player)",
+    Callback = function()
+        if selectedPlayer and selectedPlayer.Character and selectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local targetRoot = selectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local myChar = LocalPlayer.Character
+            local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
 
+            if myRoot then
+                targetRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3)
+                Rayfield:Notify({
+                    Title = "🧲 ดึงสำเร็จ",
+                    Content = "ผู้เล่นถูกดึงมาหาคุณเรียบร้อยแล้ว!",
+                    Duration = 2
+                })
+            end
+        else
+            Rayfield:Notify({
+                Title = "⚠️ ไม่สามารถดึงได้",
+                Content = "กรุณาเลือกผู้เล่นก่อน หรือผู้เล่นอาจออกจากเกม",
+                Duration = 3
+            })
+        end
+    end
+})
 Rayfield:Notify({
     Title = "💠 BomDev Pro Menu Ready!",
     Content = "✨ ระบบทั้งหมดพร้อมใช้งานแล้ว พร้อม UI ระดับมืออาชีพ!",
