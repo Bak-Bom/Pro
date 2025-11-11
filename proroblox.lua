@@ -55,6 +55,9 @@ local fpsBoostEnabled = false
 local cinematic = false
 local realisticEnabled = false
 local pcModeEnabled = false
+local weatherEnabled = false
+local weatherState = "Clear"
+local weatherTask = nil
 
 local function toggleFly()
     local char = LocalPlayer.Character
@@ -467,6 +470,113 @@ local function refreshPlayerList()
         end
     end
     return playerNames
+end
+local function clearWeatherEffects()
+    local Lighting = game:GetService("Lighting")
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v.Name:match("^BDW_") then
+            v:Destroy()
+        end
+    end
+    Lighting.Brightness = 2
+    Lighting.ClockTime = 14
+    Lighting.FogEnd = 100000
+    Lighting.GlobalShadows = false
+    Lighting.Ambient = Color3.fromRGB(127,127,127)
+end
+
+local function applyRain(intensity)
+    local Lighting = game:GetService("Lighting")
+    local rain = Instance.new("ParticleEmitter")
+    rain.Name = "BDW_Rain"
+    rain.Rate = 500 * (intensity or 1)
+    rain.Lifetime = NumberRange.new(1,1.5)
+    rain.Speed = NumberRange.new(60,80)
+    rain.VelocitySpread = 10
+    rain.Size = NumberSequence.new(0.2)
+    rain.Texture = "rbxassetid://241594314"
+    rain.Parent = workspace.Terrain
+
+    Lighting.FogEnd = 2500
+    Lighting.FogColor = Color3.fromRGB(150,160,170)
+    Lighting.Brightness = 1.2
+    Lighting.GlobalShadows = true
+
+    task.spawn(function()
+        while weatherEnabled and weatherState == "Rain" do
+            task.wait(8 + math.random()*12)
+            local s = Instance.new("Sound", workspace)
+            s.SoundId = "rbxassetid://911882087"
+            s.Volume = 0.5
+            s:Play()
+            game:GetService("Debris"):AddItem(s, 6)
+        end
+    end)
+end
+
+local function applyStorm()
+    local Lighting = game:GetService("Lighting")
+    applyRain(2)
+    Lighting.Brightness = 0.8
+    Lighting.FogEnd = 1200
+    Lighting.ClockTime = 20
+    task.spawn(function()
+        while weatherEnabled and weatherState == "Storm" do
+            wait(5 + math.random()*8)
+            local s = Instance.new("Sound", workspace)
+            s.SoundId = "rbxassetid://130768899"
+            s.Volume = 1
+            s:Play()
+            local flash = Instance.new("PointLight", workspace)
+            flash.Name = "BDW_Flash"
+            flash.Range = 60
+            flash.Brightness = 5
+            flash.Color = Color3.fromRGB(255,255,255)
+            game:GetService("Debris"):AddItem(flash, 0.15)
+            game:GetService("Debris"):AddItem(s, 6)
+        end
+    end)
+end
+
+local function applySunset()
+    local Lighting = game:GetService("Lighting")
+    clearWeatherEffects()
+    Lighting.ClockTime = 18
+    Lighting.Brightness = 2.2
+    Lighting.Ambient = Color3.fromRGB(255,200,170)
+    Lighting.OutdoorAmbient = Color3.fromRGB(180,140,120)
+    local bloom = Instance.new("BloomEffect", Lighting)
+    bloom.Name = "BDW_Bloom"
+    bloom.Intensity = 0.4
+    bloom.Size = 24
+    local cc = Instance.new("ColorCorrectionEffect", Lighting)
+    cc.Name = "BDW_CC"
+    cc.Saturation = 0.15
+    cc.Contrast = 0.1
+end
+
+local function setWeather(state)
+    weatherState = state or "Clear"
+    clearWeatherEffects()
+    if weatherTask then
+        pcall(function() weatherTask = nil end)
+    end
+
+    if weatherState == "Rain" then
+        applyRain(1)
+    elseif weatherState == "Storm" then
+        applyStorm()
+    elseif weatherState == "Sunset" then
+        applySunset()
+    elseif weatherState == "Night" then
+        local Lighting = game:GetService("Lighting")
+        Lighting.ClockTime = 22
+        Lighting.Brightness = 0.6
+        Lighting.FogEnd = 2000
+        Lighting.Ambient = Color3.fromRGB(80, 90, 120)
+    else
+        clearWeatherEffects()
+    end
 end
 
 local MovementTab = Window:CreateTab("🚀 Movement Control", 4483362458)
@@ -1012,6 +1122,36 @@ TeleportTab:CreateButton({
             Content = "ผู้เล่นถูกดึงมาหาคุณเรียบร้อยแล้ว!",
             Duration = 2
         })
+    end
+})
+VisualTab:CreateToggle({
+    Name = "⛅ Dynamic Weather",
+    CurrentValue = false,
+    Flag = "DynamicWeather",
+    Callback = function(state)
+        weatherEnabled = state
+        if not state then
+            clearWeatherEffects()
+            Rayfield:Notify({Title="⛅ Weather", Content="ปิดระบบสภาพอากาศแล้ว", Duration=2})
+            return
+        end
+        setWeather("Rain")
+        Rayfield:Notify({Title="⛅ Weather", Content="เปิด Dynamic Weather (Rain) เรียบร้อย", Duration=2})
+    end
+})
+
+VisualTab:CreateDropdown({
+    Name = "🌦 เลือกโหมดอากาศ",
+    Options = {"Clear","Rain","Storm","Sunset","Night"},
+    CurrentOption = "Clear",
+    Flag = "WeatherMode",
+    Callback = function(option)
+        if not weatherEnabled then
+            Rayfield:Notify({Title="⚠️ Weather", Content="เปิด Dynamic Weather ก่อน", Duration=2})
+            return
+        end
+        setWeather(option)
+        Rayfield:Notify({Title="🌦 Weather", Content="ตั้งค่าเป็น: "..option, Duration=2})
     end
 })
 Rayfield:Notify({
